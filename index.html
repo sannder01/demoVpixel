@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PIXEL CUBER CLUB</title>
+<style>
+  :root{
+    --bg-black:#0a0a0c;
+    --bg-dark:#151519;
+    --bg-card:#1c1c22;
+    --white:#f2f2f5;
+    --gray:#9a9aa5;
+    --accent:#8A2BE2;
+    --accent-glow:rgba(138,43,226,0.45);
+    --green:#2ecc71;
+    --red:#e74c3c;
+    --radius:16px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{
+    background:radial-gradient(circle at top, #17141d 0%, var(--bg-black) 60%);
+    color:var(--white);
+    font-family:'Segoe UI',Roboto,Arial,sans-serif;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  #app{max-width:1100px;margin:0 auto;padding:24px 16px 60px;}
+  header.topbar{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:16px 0;flex-wrap:wrap;gap:12px;
+  }
+  .logo{
+    font-size:1.6rem;font-weight:800;letter-spacing:1px;
+    color:var(--white);text-shadow:0 0 18px var(--accent-glow);
+  }
+  .logo span{color:var(--accent);}
+  nav.topnav{display:flex;gap:10px;flex-wrap:wrap;}
+  button, .btn{
+    background:var(--bg-card);
+    color:var(--white);
+    border:1px solid #2a2a33;
+    padding:10px 18px;
+    border-radius:12px;
+    cursor:pointer;
+    font-size:0.95rem;
+    font-weight:600;
+    transition:all .25s ease;
+  }
+  button:hover,.btn:hover{
+    border-color:var(--accent);
+    box-shadow:0 0 14px var(--accent-glow);
+    transform:translateY(-2px);
+  }
+  .btn-primary{
+    background:linear-gradient(135deg,var(--accent),#5e1caf);
+    border:none;
+  }
+  .btn-primary:hover{box-shadow:0 0 22px var(--accent-glow);}
+  .btn-danger{background:#3a1418;border-color:#5a1f26;}
+  .btn-danger:hover{border-color:var(--red);box-shadow:0 0 14px rgba(231,76,60,0.4);}
+  .btn-ghost{background:transparent;}
+
+  section.hero{
+    text-align:center;padding:60px 10px 40px;
+  }
+  section.hero h1{
+    font-size:2.6rem;font-weight:900;letter-spacing:2px;
+    text-shadow:0 0 30px var(--accent-glow);
+  }
+  section.hero h1 span{color:var(--accent);}
+  section.hero p{color:var(--gray);margin-top:12px;font-size:1.05rem;}
+  .hero-buttons{display:flex;gap:14px;justify-content:center;margin-top:26px;flex-wrap:wrap;}
+
+  .section-title{
+    font-size:1.4rem;font-weight:800;margin:40px 0 18px;
+    display:flex;align-items:center;gap:10px;
+  }
+  .section-title::before{
+    content:"";width:6px;height:22px;background:var(--accent);
+    border-radius:4px;box-shadow:0 0 10px var(--accent-glow);
+  }
+
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+    gap:20px;
+  }
+  .card{
+    background:var(--bg-card);
+    border:1px solid #262630;
+    border-radius:var(--radius);
+    padding:22px;
+    transition:all .25s ease;
+    position:relative;
+    overflow:hidden;
+  }
+  .card:hover{
+    transform:translateY(-4px);
+    border-color:var(--accent);
+    box-shadow:0 8px 26px rgba(0,0,0,0.4),0 0 18px var(--accent-glow);
+  }
+  .card h3{font-size:1.25rem;margin-bottom:8px;}
+  .card .price{font-size:1.6rem;font-weight:800;color:var(--accent);margin:10px 0;}
+  .card .meta{color:var(--gray);font-size:0.9rem;}
+
+  .socials{display:flex;gap:14px;justify-content:center;margin-top:44px;}
+  .socials a{
+    color:var(--white);text-decoration:none;
+    background:var(--bg-card);padding:10px 20px;border-radius:12px;
+    border:1px solid #2a2a33;font-weight:600;transition:all .25s ease;
+  }
+  .socials a:hover{border-color:var(--accent);box-shadow:0 0 14px var(--accent-glow);}
+
+  .auth-wrap{
+    max-width:380px;margin:60px auto;
+    background:var(--bg-card);border:1px solid #262630;
+    border-radius:var(--radius);padding:32px;
+  }
+  .auth-wrap h2{margin-bottom:20px;text-align:center;}
+  .field{margin-bottom:16px;}
+  .field label{display:block;font-size:0.85rem;color:var(--gray);margin-bottom:6px;}
+  .field input{
+    width:100%;padding:11px 14px;border-radius:10px;
+    border:1px solid #2a2a33;background:var(--bg-black);color:var(--white);
+    font-size:0.95rem;outline:none;
+  }
+  .field input:focus{border-color:var(--accent);box-shadow:0 0 10px var(--accent-glow);}
+  .auth-error{color:var(--red);font-size:0.85rem;margin-top:10px;min-height:18px;text-align:center;}
+  .auth-hint{color:var(--gray);font-size:0.78rem;margin-top:18px;text-align:center;line-height:1.5;}
+
+  .zone-block{margin-bottom:36px;}
+  .zone-header{
+    display:flex;justify-content:space-between;align-items:baseline;
+    margin-bottom:14px;flex-wrap:wrap;gap:8px;
+  }
+  .zone-header h3{font-size:1.15rem;}
+  .zone-header span{color:var(--gray);font-size:0.85rem;}
+
+  .pc-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(150px,1fr));
+    gap:14px;
+  }
+  .pc-card{
+    background:var(--bg-card);border:1px solid #262630;
+    border-radius:12px;padding:16px;text-align:center;
+    transition:all .2s ease;
+  }
+  .pc-card:hover{transform:translateY(-3px);}
+  .pc-card .pc-name{font-weight:700;margin-bottom:8px;}
+  .status-badge{
+    display:inline-block;padding:4px 12px;border-radius:20px;
+    font-size:0.78rem;font-weight:700;margin-bottom:10px;
+  }
+  .status-free{background:rgba(46,204,113,0.15);color:var(--green);border:1px solid var(--green);}
+  .status-busy{background:rgba(231,76,60,0.15);color:var(--red);border:1px solid var(--red);}
+  .pc-card button{width:100%;padding:8px;font-size:0.85rem;}
+  .admin-toggle{width:100%;padding:8px;font-size:0.85rem;margin-top:2px;}
+
+  footer{
+    text-align:center;color:var(--gray);font-size:0.8rem;
+    margin-top:60px;padding-top:20px;border-top:1px solid #1e1e26;
+  }
+  .user-info{color:var(--gray);font-size:0.9rem;display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+  .user-info b{color:var(--white);}
+  @media (max-width:520px){
+    section.hero h1{font-size:2rem;}
+    header.topbar{flex-direction:column;align-items:flex-start;}
+  }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+/* =========================================================
+   PIXEL CUBER CLUB — прототип (frontend-only)
+   Структура подготовлена для подключения backend/БД:
+   - Все данные хранятся в объекте state
+   - Все "операции с данными" вынесены в отдельные функции
+     (api.*), которые сейчас работают локально, но в будущем
+     их тело можно заменить на fetch()/Firebase/Supabase вызовы
+     без изменения UI-логики.
+   ========================================================= */
+
+// ---------- ДАННЫЕ (в будущем — из backend) ----------
+
+const USERS = [
+  { login: "admin", password: "admin123", role: "admin", name: "Администратор" },
+  { login: "user",  password: "user123",  role: "user",  name: "Пользователь" }
+];
+
+const TARIFFS = [
+  { id: "vip",    title: "VIP",         price: "—", meta: "5 компьютеров" },
+  { id: "duo",    title: "DUO",         price: "—", meta: "2 компьютера" },
+  { id: "common", title: "Общий зал",   price: "—", meta: "20 компьютеров" }
+];
+
+function buildInitialPCs() {
+  const pcs = [];
+  let id = 1;
+  for (let i = 1; i <= 5; i++) {
+    pcs.push({ id: id++, name: `VIP-${i}`, zone: "VIP", status: "free" });
+  }
+  for (let i = 1; i <= 2; i++) {
+    pcs.push({ id: id++, name: `DUO-${i}`, zone: "DUO", status: "free" });
+  }
+  for (let i = 1; i <= 20; i++) {
+    pcs.push({ id: id++, name: `PC-${i}`, zone: "Общий зал", status: "free" });
+  }
+  return pcs;
+}
+
+// ---------- ГЛОБАЛЬНОЕ СОСТОЯНИЕ ----------
+
+const state = {
+  page: "home",        // home | login | user | admin
+  currentUser: null,   // { login, role, name }
+  pcs: buildInitialPCs()
+};
+
+// ---------- "API" СЛОЙ (заменить на реальный backend) ----------
+
+const api = {
+  login(login, password) {
+    const found = USERS.find(u => u.login === login && u.password === password);
+    return found || null;
+  },
+  getPCs() {
+    return state.pcs;
+  },
+  bookPC(id) {
+    const pc = state.pcs.find(p => p.id === id);
+    if (pc && pc.status === "free") {
+      pc.status = "busy";
+    }
+    return pc;
+  },
+  setStatus(id, status) {
+    const pc = state.pcs.find(p => p.id === id);
+    if (pc) pc.status = status;
+    return pc;
+  }
+};
+
+// ---------- РОУТИНГ ----------
+
+function navigate(page) {
+  state.page = page;
+  render();
+}
+
+function logout() {
+  state.currentUser = null;
+  navigate("home");
+}
+
+function render() {
+  const app = document.getElementById("app");
+  app.innerHTML = "";
+
+  app.appendChild(renderHeader());
+
+  switch (state.page) {
+    case "login":
+      app.appendChild(renderLogin());
+      break;
+    case "user":
+      app.appendChild(renderUser());
+      break;
+    case "admin":
+      app.appendChild(renderAdmin());
+      break;
+    default:
+      app.appendChild(renderHome());
+  }
+
+  app.appendChild(renderFooter());
+}
+
+// ---------- HEADER / FOOTER ----------
+
+function renderHeader() {
+  const header = document.createElement("header");
+  header.className = "topbar";
+
+  const logo = document.createElement("div");
+  logo.className = "logo";
+  logo.innerHTML = `PIXEL <span>CUBER</span> CLUB`;
+  logo.style.cursor = "pointer";
+  logo.onclick = () => navigate("home");
+  header.appendChild(logo);
+
+  const nav = document.createElement("nav");
+  nav.className = "topnav";
+
+  if (state.currentUser) {
+    const info = document.createElement("div");
+    info.className = "user-info";
+    info.innerHTML = `Вы вошли как <b>${state.currentUser.name}</b>`;
+    nav.appendChild(info);
+
+    const goPanel = document.createElement("button");
+    goPanel.textContent = state.currentUser.role === "admin" ? "Панель администратора" : "Бронирование";
+    goPanel.className = "btn-primary";
+    goPanel.onclick = () => navigate(state.currentUser.role === "admin" ? "admin" : "user");
+    nav.appendChild(goPanel);
+
+    const logoutBtn = document.createElement("button");
+    logoutBtn.textContent = "Выйти";
+    logoutBtn.className = "btn-danger";
+    logoutBtn.onclick = logout;
+    nav.appendChild(logoutBtn);
+  } else {
+    const homeBtn = document.createElement("button");
+    homeBtn.textContent = "Главная";
+    homeBtn.className = "btn-ghost";
+    homeBtn.onclick = () => navigate("home");
+    nav.appendChild(homeBtn);
+
+    const loginBtn = document.createElement("button");
+    loginBtn.textContent = "Войти";
+    loginBtn.className = "btn-primary";
+    loginBtn.onclick = () => navigate("login");
+    nav.appendChild(loginBtn);
+  }
+
+  header.appendChild(nav);
+  return header;
+}
+
+function renderFooter() {
+  const footer = document.createElement("footer");
+  footer.innerHTML = `© ${new Date().getFullYear()} PIXEL CUBER CLUB. Все права защищены.`;
+  return footer;
+}
+
+// ---------- ГЛАВНАЯ СТРАНИЦА ----------
+
+function renderHome() {
+  const frag = document.createElement("div");
+
+  const hero = document.createElement("section");
+  hero.className = "hero";
+  hero.innerHTML = `
+    <h1>PIXEL <span>CUBER</span> CLUB</h1>
+    <p>Компьютерный клуб нового поколения. Мощные ПК, комфортные зоны, атмосфера киберспорта.</p>
+  `;
+  const heroBtns = document.createElement("div");
+  heroBtns.className = "hero-buttons";
+
+  const bookBtn = document.createElement("button");
+  bookBtn.textContent = "Забронировать";
+  bookBtn.className = "btn-primary";
+  bookBtn.onclick = () => navigate(state.currentUser ? (state.currentUser.role === "admin" ? "admin" : "user") : "login");
+  heroBtns.appendChild(bookBtn);
+
+  const loginBtn = document.createElement("button");
+  loginBtn.textContent = "Войти";
+  loginBtn.onclick = () => navigate("login");
+  heroBtns.appendChild(loginBtn);
+
+  hero.appendChild(heroBtns);
+  frag.appendChild(hero);
+
+  const title = document.createElement("div");
+  title.className = "section-title";
+  title.textContent = "Тарифы";
+  frag.appendChild(title);
+
+  const grid = document.createElement("div");
+  grid.className = "grid";
+  TARIFFS.forEach(t => {
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `
+      <h3>${t.title}</h3>
+      <div class="price">${t.price}</div>
+      <div class="meta">${t.meta}</div>
+    `;
+    grid.appendChild(card);
+  });
+  frag.appendChild(grid);
+
+  const socials = document.createElement("div");
+  socials.className = "socials";
+  socials.innerHTML = `
+    <a href="#" target="_blank" rel="noopener">Instagram</a>
+    <a href="#" target="_blank" rel="noopener">WhatsApp</a>
+  `;
+  frag.appendChild(socials);
+
+  return frag;
+}
+
+// ---------- АВТОРИЗАЦИЯ ----------
+
+function renderLogin() {
+  const wrap = document.createElement("div");
+  wrap.className = "auth-wrap";
+  wrap.innerHTML = `
+    <h2>Вход</h2>
+    <div class="field">
+      <label>Логин</label>
+      <input type="text" id="login-input" autocomplete="username" />
+    </div>
+    <div class="field">
+      <label>Пароль</label>
+      <input type="password" id="password-input" autocomplete="current-password" />
+    </div>
+    <div class="auth-error" id="auth-error"></div>
+    <div class="auth-hint">
+      Демо-доступ:<br>
+      Администратор — admin / admin123<br>
+      Пользователь — user / user123
+    </div>
+  `;
+
+  const submitBtn = document.createElement("button");
+  submitBtn.textContent = "Войти";
+  submitBtn.className = "btn-primary";
+  submitBtn.style.width = "100%";
+  submitBtn.style.marginTop = "6px";
+  submitBtn.onclick = () => handleLogin();
+  wrap.appendChild(submitBtn);
+
+  function handleLogin() {
+    const login = wrap.querySelector("#login-input").value.trim();
+    const password = wrap.querySelector("#password-input").value.trim();
+    const errorBox = wrap.querySelector("#auth-error");
+
+    const user = api.login(login, password);
+    if (!user) {
+      errorBox.textContent = "Неверный логин или пароль";
+      return;
+    }
+    state.currentUser = { login: user.login, role: user.role, name: user.name };
+    navigate(user.role === "admin" ? "admin" : "user");
+  }
+
+  wrap.addEventListener("keydown", e => {
+    if (e.key === "Enter") handleLogin();
+  });
+
+  return wrap;
+}
+
+// ---------- ОБЩАЯ СЕТКА ПК (используется user и admin панелями) ----------
+
+function groupByZone(pcs) {
+  const zones = {};
+  pcs.forEach(pc => {
+    if (!zones[pc.zone]) zones[pc.zone] = [];
+    zones[pc.zone].push(pc);
+  });
+  return zones;
+}
+
+function renderPCs(pcs, mode) {
+  // mode: "user" | "admin"
+  const container = document.createElement("div");
+  const zones = groupByZone(pcs);
+
+  Object.keys(zones).forEach(zoneName => {
+    const zonePCs = zones[zoneName];
+    const block = document.createElement("div");
+    block.className = "zone-block";
+
+    const header = document.createElement("div");
+    header.className = "zone-header";
+    const freeCount = zonePCs.filter(p => p.status === "free").length;
+    header.innerHTML = `
+      <h3>${zoneName}</h3>
+      <span>Свободно: ${freeCount} / ${zonePCs.length}</span>
+    `;
+    block.appendChild(header);
+
+    const grid = document.createElement("div");
+    grid.className = "pc-grid";
+
+    zonePCs.forEach(pc => {
+      grid.appendChild(renderSinglePC(pc, mode));
+    });
+
+    block.appendChild(grid);
+    container.appendChild(block);
+  });
+
+  return container;
+}
+
+function renderSinglePC(pc, mode) {
+  const card = document.createElement("div");
+  card.className = "pc-card";
+
+  const isFree = pc.status === "free";
+  card.innerHTML = `
+    <div class="pc-name">${pc.name}</div>
+    <div class="status-badge ${isFree ? "status-free" : "status-busy"}">
+      ${isFree ? "Свободно" : "Занято"}
+    </div>
+  `;
+
+  if (mode === "user") {
+    if (isFree) {
+      const btn = document.createElement("button");
+      btn.textContent = "Забронировать";
+      btn.className = "btn-primary";
+      btn.onclick = () => {
+        updateStatus(pc.id, "busy");
+      };
+      card.appendChild(btn);
+    }
+  } else if (mode === "admin") {
+    const toggleBtn = document.createElement("button");
+    toggleBtn.className = "admin-toggle";
+    toggleBtn.textContent = isFree ? "Отметить занятым" : "Освободить";
+    toggleBtn.onclick = () => {
+      updateStatus(pc.id, isFree ? "busy" : "free");
+    };
+    card.appendChild(toggleBtn);
+  }
+
+  return card;
+}
+
+function updateStatus(id, status) {
+  if (status === "busy") {
+    api.bookPC(id);
+  } else {
+    api.setStatus(id, status);
+  }
+  render();
+}
+
+// ---------- ПАНЕЛЬ ПОЛЬЗОВАТЕЛЯ ----------
+
+function renderUser() {
+  const frag = document.createElement("div");
+
+  if (!state.currentUser) {
+    navigate("login");
+    return frag;
+  }
+
+  const title = document.createElement("div");
+  title.className = "section-title";
+  title.textContent = "Бронирование";
+  frag.appendChild(title);
+
+  frag.appendChild(renderPCs(api.getPCs(), "user"));
+
+  return frag;
+}
+
+// ---------- ПАНЕЛЬ АДМИНИСТРАТОРА ----------
+
+function renderAdmin() {
+  const frag = document.createElement("div");
+
+  if (!state.currentUser || state.currentUser.role !== "admin") {
+    navigate("login");
+    return frag;
+  }
+
+  const title = document.createElement("div");
+  title.className = "section-title";
+  title.textContent = "Панель администратора";
+  frag.appendChild(title);
+
+  frag.appendChild(renderPCs(api.getPCs(), "admin"));
+
+  return frag;
+}
+
+// ---------- СТАРТ ----------
+
+render();
+</script>
+</body>
+</html>
