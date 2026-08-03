@@ -52,6 +52,7 @@
     box-shadow:0 0 14px var(--accent-glow);
     transform:translateY(-2px);
   }
+  button:disabled{opacity:0.5;cursor:not-allowed;transform:none;box-shadow:none;}
   .btn-primary{
     background:linear-gradient(135deg,var(--accent),#5e1caf);
     border:none;
@@ -74,9 +75,11 @@
 
   .section-title{
     font-size:1.4rem;font-weight:800;margin:40px 0 18px;
-    display:flex;align-items:center;gap:10px;
+    display:flex;align-items:center;gap:10px;justify-content:space-between;
+    flex-wrap:wrap;
   }
-  .section-title::before{
+  .section-title .label{display:flex;align-items:center;gap:10px;}
+  .section-title .label::before{
     content:"";width:6px;height:22px;background:var(--accent);
     border-radius:4px;box-shadow:0 0 10px var(--accent-glow);
   }
@@ -158,6 +161,9 @@
   .pc-card button{width:100%;padding:8px;font-size:0.85rem;}
   .admin-toggle{width:100%;padding:8px;font-size:0.85rem;margin-top:2px;}
 
+  .loading-text, .error-text{color:var(--gray);text-align:center;padding:40px 0;}
+  .error-text{color:var(--red);}
+
   footer{
     text-align:center;color:var(--gray);font-size:0.8rem;
     margin-top:60px;padding-top:20px;border-top:1px solid #1e1e26;
@@ -175,16 +181,16 @@
 
 <script>
 /* =========================================================
-   PIXEL CUBER CLUB — прототип (frontend-only)
-   Структура подготовлена для подключения backend/БД:
-   - Все данные хранятся в объекте state
-   - Все "операции с данными" вынесены в отдельные функции
-     (api.*), которые сейчас работают локально, но в будущем
-     их тело можно заменить на fetch()/Firebase/Supabase вызовы
-     без изменения UI-логики.
+   PIXEL CUBER CLUB
+   Данные о бронях теперь хранятся в облаке (Vercel KV) через
+   серверлесс-функцию /api/pcs — все пользователи видят одно
+   и то же состояние в реальном времени (после обновления/опроса).
+
+   Вход по-прежнему проверяется на клиенте (демо-режим) — это
+   отдельная задача, при желании тоже можно перевести на backend.
    ========================================================= */
 
-// ---------- ДАННЫЕ (в будущем — из backend) ----------
+// ---------- ПОЛЬЗОВАТЕЛИ (демо, без backend-авторизации) ----------
 
 const USERS = [
   { login: "admin", password: "admin123", role: "admin", name: "Администратор" },
@@ -197,58 +203,80 @@ const TARIFFS = [
   { id: "common", title: "Общий зал",   price: "—", meta: "20 компьютеров" }
 ];
 
-function buildInitialPCs() {
-  const pcs = [];
-  let id = 1;
-  for (let i = 1; i <= 5; i++) {
-    pcs.push({ id: id++, name: `VIP-${i}`, zone: "VIP", status: "free" });
-  }
-  for (let i = 1; i <= 2; i++) {
-    pcs.push({ id: id++, name: `DUO-${i}`, zone: "DUO", status: "free" });
-  }
-  for (let i = 1; i <= 20; i++) {
-    pcs.push({ id: id++, name: `PC-${i}`, zone: "Общий зал", status: "free" });
-  }
-  return pcs;
-}
-
 // ---------- ГЛОБАЛЬНОЕ СОСТОЯНИЕ ----------
 
 const state = {
   page: "home",        // home | login | user | admin
   currentUser: null,   // { login, role, name }
-  pcs: buildInitialPCs()
+  pcs: [],             // приходит из /api/pcs
+  loading: false,
+  error: null
 };
 
-// ---------- "API" СЛОЙ (заменить на реальный backend) ----------
+// ---------- API-СЛОЙ (реальные запросы к серверлесс-функции) ----------
 
 const api = {
   login(login, password) {
     const found = USERS.find(u => u.login === login && u.password === password);
     return found || null;
   },
-  getPCs() {
-    return state.pcs;
+  async fetchPCs() {
+    const res = await fetch('/api/pcs');
+    if (!res.ok) throw new Error('Не удалось загрузить список мест');
+    return res.json();
   },
-  bookPC(id) {
-    const pc = state.pcs.find(p => p.id === id);
-    if (pc && pc.status === "free") {
-      pc.status = "busy";
-    }
-    return pc;
-  },
-  setStatus(id, status) {
-    const pc = state.pcs.find(p => p.id === id);
-    if (pc) pc.status = status;
-    return pc;
+  async updateStatus(id, status) {
+    const res = await fetch('/api/pcs', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, status })
+    });
+    if (!res.ok) throw new Error('Не удалось обновить статус');
+    return res.json();
   }
 };
+
+// ---------- ЗАГРУЗКА ДАННЫХ ----------
+
+async function loadPCs() {
+  state.loading = true;
+  state.error = null;
+  render();
+  try {
+    state.pcs = await api.fetchPCs();
+  } catch (e) {
+    state.error = e.message;
+  } finally {
+    state.loading = false;
+    render();
+  }
+}
+
+async function updateStatus(id, status) {
+  // оптимистичное обновление интерфейса
+  const pc = state.pcs.find(p => p.id === id);
+  const prevStatus = pc ? pc.status : null;
+  if (pc) pc.status = status;
+  render();
+
+  try {
+    await api.updateStatus(id, status);
+  } catch (e) {
+    // откат при ошибке сети/сервера
+    if (pc) pc.status = prevStatus;
+    state.error = e.message;
+    render();
+  }
+}
 
 // ---------- РОУТИНГ ----------
 
 function navigate(page) {
   state.page = page;
   render();
+  if ((page === "user" || page === "admin") && state.pcs.length === 0) {
+    loadPCs();
+  }
 }
 
 function logout() {
@@ -366,7 +394,7 @@ function renderHome() {
 
   const title = document.createElement("div");
   title.className = "section-title";
-  title.textContent = "Тарифы";
+  title.innerHTML = `<span class="label">Тарифы</span>`;
   frag.appendChild(title);
 
   const grid = document.createElement("div");
@@ -460,6 +488,31 @@ function groupByZone(pcs) {
 function renderPCs(pcs, mode) {
   // mode: "user" | "admin"
   const container = document.createElement("div");
+
+  if (state.loading) {
+    const loading = document.createElement("div");
+    loading.className = "loading-text";
+    loading.textContent = "Загрузка данных...";
+    container.appendChild(loading);
+    return container;
+  }
+
+  if (state.error) {
+    const err = document.createElement("div");
+    err.className = "error-text";
+    err.textContent = `Ошибка: ${state.error}`;
+    container.appendChild(err);
+
+    const retry = document.createElement("button");
+    retry.textContent = "Повторить";
+    retry.className = "btn-primary";
+    retry.style.display = "block";
+    retry.style.margin = "16px auto 0";
+    retry.onclick = () => loadPCs();
+    container.appendChild(retry);
+    return container;
+  }
+
   const zones = groupByZone(pcs);
 
   Object.keys(zones).forEach(zoneName => {
@@ -507,31 +560,18 @@ function renderSinglePC(pc, mode) {
       const btn = document.createElement("button");
       btn.textContent = "Забронировать";
       btn.className = "btn-primary";
-      btn.onclick = () => {
-        updateStatus(pc.id, "busy");
-      };
+      btn.onclick = () => updateStatus(pc.id, "busy");
       card.appendChild(btn);
     }
   } else if (mode === "admin") {
     const toggleBtn = document.createElement("button");
     toggleBtn.className = "admin-toggle";
     toggleBtn.textContent = isFree ? "Отметить занятым" : "Освободить";
-    toggleBtn.onclick = () => {
-      updateStatus(pc.id, isFree ? "busy" : "free");
-    };
+    toggleBtn.onclick = () => updateStatus(pc.id, isFree ? "busy" : "free");
     card.appendChild(toggleBtn);
   }
 
   return card;
-}
-
-function updateStatus(id, status) {
-  if (status === "busy") {
-    api.bookPC(id);
-  } else {
-    api.setStatus(id, status);
-  }
-  render();
 }
 
 // ---------- ПАНЕЛЬ ПОЛЬЗОВАТЕЛЯ ----------
@@ -546,10 +586,15 @@ function renderUser() {
 
   const title = document.createElement("div");
   title.className = "section-title";
-  title.textContent = "Бронирование";
-  frag.appendChild(title);
+  title.innerHTML = `<span class="label">Бронирование</span>`;
 
-  frag.appendChild(renderPCs(api.getPCs(), "user"));
+  const refreshBtn = document.createElement("button");
+  refreshBtn.textContent = "Обновить";
+  refreshBtn.onclick = () => loadPCs();
+  title.appendChild(refreshBtn);
+
+  frag.appendChild(title);
+  frag.appendChild(renderPCs(state.pcs, "user"));
 
   return frag;
 }
@@ -566,10 +611,15 @@ function renderAdmin() {
 
   const title = document.createElement("div");
   title.className = "section-title";
-  title.textContent = "Панель администратора";
-  frag.appendChild(title);
+  title.innerHTML = `<span class="label">Панель администратора</span>`;
 
-  frag.appendChild(renderPCs(api.getPCs(), "admin"));
+  const refreshBtn = document.createElement("button");
+  refreshBtn.textContent = "Обновить";
+  refreshBtn.onclick = () => loadPCs();
+  title.appendChild(refreshBtn);
+
+  frag.appendChild(title);
+  frag.appendChild(renderPCs(state.pcs, "admin"));
 
   return frag;
 }
